@@ -1,19 +1,32 @@
-#/usr/bin/python
+#!/usr/bin/python
 
 ####################
 # Name: Jason Holman
 # A#:   A01895834
 ####################
 
-# deleted row 662 from AIPiCar/PI_CAR_DATA3/PI_Car_Runs.csv
-
-import csv
+from sklearn import tree, metrics
+from sklearn.metrics import confusion_matrix, classification_report
+import random
 import numpy as np
+import csv
 import os
 import cv2
 
 
-def process_csv(directory, data):
+def main():
+    data_x, data_y = process_csv('AIPiCar')
+    train_x = data_x[int(len(data_x) * .1):]
+    test_x = data_x[:int(len(data_x) * .1)]
+    train_y = data_y[int(len(data_y) * .1):]
+    test_y = data_y[:int(len(data_y) * .1)]
+    print('Data prepared starting training process')
+    test_dtr(train_x, train_y, test_x, test_y)
+
+
+def process_csv(directory):
+    input = []
+    output = []
     for dirname, dirnames, filenames in os.walk(directory):
         for f in filenames:
             if f.endswith('.csv'):
@@ -26,7 +39,9 @@ def process_csv(directory, data):
                             line_count += 1
                         else:
                             image_path = os.path.join(dirname, 'rawImages', line[0])
-                            data.append((create_input(image_path), create_output(line[1])))
+                            input.append(create_input(image_path))
+                            output.append(create_output(line[1]))
+    return (input, output)
 
 
 def create_output(output):
@@ -43,13 +58,21 @@ def create_output(output):
         if len(commands) == 0:
             commands.append(1)
         if commands[0] == 1:
-            return np.array([1, 0, 0, 0])
+            e = np.zeros((4, 1))
+            e[0] = 1
+            return 1
         elif commands[0] == 2:
-            return np.array([0, 1, 0, 0])
+            e = np.zeros((4, 1))
+            e[1] = 1
+            return 2
         elif commands[0] == 3:
-            return np.array([0, 0, 1, 0])
+            e = np.zeros((4, 1))
+            e[2] = 1
+            return 3
         elif commands[0] == 4:
-            return np.array([1, 0, 0, 0])
+            e = np.zeros((4, 1))
+            e[3] = 1
+            return 4
 
 
 def create_input(input_file):
@@ -60,13 +83,13 @@ def create_input(input_file):
     return scaled_img_data
 
 
-
-def main():
-    data = []
-    process_csv('AIPiCar', data)
-    for line in data:
-        print(line)
-    print(len(data))
+def test_dtr(train_x, train_y, test_x, test_y):
+    for _ in range(10):
+        clf = tree.DecisionTreeClassifier(random_state=random.randint(0, 100))
+        dtr = clf.fit(train_x, train_y)
+        print('Training completed...')
+        valid_preds = dtr.predict(test_x)
+        print(metrics.classification_report(test_y, valid_preds))
 
 
 main()
